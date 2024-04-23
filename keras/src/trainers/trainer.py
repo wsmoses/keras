@@ -49,6 +49,7 @@ class Trainer:
         steps_per_execution=1,
         jit_compile="auto",
         auto_scale_loss=True,
+        pipeline=False
     ):
         """Configures the model for training.
 
@@ -179,6 +180,7 @@ class Trainer:
             )
 
         self.jit_compile = jit_compile
+        self.pipeline = pipeline
         self.run_eagerly = run_eagerly
         self.stop_training = False
         self.compiled = True
