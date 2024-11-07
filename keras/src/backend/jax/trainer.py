@@ -23,6 +23,7 @@ class JAXTrainer(base_trainer.Trainer):
         self.test_function = None
         self.predict_function = None
         self._jax_state_synced = True
+        assert False
 
     def compute_loss_and_updates(
         self,
