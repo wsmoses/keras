@@ -23,7 +23,22 @@ class JAXTrainer(base_trainer.Trainer):
         self.test_function = None
         self.predict_function = None
         self._jax_state_synced = True
-        assert False
+        import os
+        pvar = os.getenv("ENZYME_JAX")
+        if (pvar is not None):
+            import enzyme_ad.jax as enzyme_jax
+            pre = os.getenv("ENZYME_JAX_PRE")
+            pvar = pvar.replace("hlo_opts()", enzyme_jax.hlo_opts())
+            def pipelinefn(fn, fntype, **kwargs):
+                pipe = enzyme_jax.JaXPipeline(pvar, jit_options=kwargs, inner_jit=False)
+                if fntype == "loss":
+                    if pre:
+                        return pipe(fn)
+                    else:
+                        return fn
+                else:
+                    return pipe(fn)
+            self.pipeline = pipelinefn 
 
     def compute_loss_and_updates(
         self,
