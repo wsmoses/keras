@@ -25,19 +25,14 @@ def pipeline(fn, fntype, jit_options={}):
         return fn
     import enzyme_ad.jax as enzyme_jax
     pre = os.environ.get('ENZYME_JAX_PRE', None)
-    print("prevar=", pre, " ty=", type(pre))
     pvar = pvar.replace("hlo_opts()", enzyme_jax.hlo_opts())
     pipe = enzyme_jax.JaXPipeline(pvar)
-    print("fntype=", fntype, "pipe=", pipe, " pvar=", pvar)
     if fntype == "loss":
         if pre:
-            print("sending pipe1")
             return enzyme_jax.enzyme_jax_ir(pipeline_options=pipe, jit_options=jit_options, inner_jit=False)(fn)
         else:
-            print("not sending pipe")
             return fn
     else:
-        print("sending pipe2")
         return enzyme_jax.enzyme_jax_ir(pipeline_options=pipe, jit_options=jit_options, inner_jit=False)(fn)
 
 class JAXTrainer(base_trainer.Trainer):
