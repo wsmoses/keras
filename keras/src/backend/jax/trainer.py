@@ -16,6 +16,30 @@ from keras.src.trainers.data_adapters import data_adapter_utils
 from keras.src.trainers.epoch_iterator import EpochIterator
 from keras.src.utils import traceback_utils
 
+def pipeline(fn, fntype, **kwargs):
+    import os
+    pvar = os.environ.get('ENZYME_JAX', None)
+    print("environ=", os.environ)
+    print("pvar=", pvar, " ty=", type(pvar))
+    if pvar is None:
+        return fn
+    import enzyme_ad.jax as enzyme_jax
+    pre = os.environ.get('ENZYME_JAX_PRE', None)
+    print("prevar=", pre, " ty=", type(pre))
+    pvar = pvar.replace("hlo_opts()", enzyme_jax.hlo_opts())
+    pipe = enzyme_jax.JaXPipeline(pvar, jit_options=kwargs, inner_jit=False)
+    print("fntype=", fntype, "pipe=", pipe, " pvar=", pvar)
+    if fntype == "loss":
+        if pre:
+            print("sending pipe1")
+            return pipe(fn)
+        else:
+            print("not sending pipe")
+            return fn
+    else:
+        print("sending pipe2")
+        return pipe(fn)
+
 class JAXTrainer(base_trainer.Trainer):
     def __init__(self):
         super().__init__()
@@ -23,32 +47,6 @@ class JAXTrainer(base_trainer.Trainer):
         self.test_function = None
         self.predict_function = None
         self._jax_state_synced = True
-        import os
-        pvar = os.environ.get('ENZYME_JAX', None)
-        print("environ=", os.environ)
-        print("pvar=", pvar, " ty=", type(pvar))
-        if (pvar is not None):
-            import enzyme_ad.jax as enzyme_jax
-            pre = os.environ.get('ENZYME_JAX_PRE', None)
-            print("prevar=", pre, " ty=", type(pre))
-            pvar = pvar.replace("hlo_opts()", enzyme_jax.hlo_opts())
-            def pipelinefn(fn, fntype, **kwargs):
-                pipe = enzyme_jax.JaXPipeline(pvar, jit_options=kwargs, inner_jit=False)
-                print("fntype=", fntype, "pipe=", pipe, " pvar=", pvar)
-                if fntype == "loss":
-                    if pre:
-                        print("sending pipe1")
-                        return pipe(fn)
-                    else:
-                        print("not sending pipe")
-                        return fn
-                else:
-                    print("sending pipe2")
-                    return pipe(fn)
-            self.pipeline = pipelinefn 
-        
-        print("construct pipeline= ", self.pipeline)
-        print("construct self= ", self)
 
     def compute_loss_and_updates(
         self,
@@ -119,7 +117,7 @@ class JAXTrainer(base_trainer.Trainer):
         x, y, sample_weight = data_adapter_utils.unpack_x_y_sample_weight(data)
 
         loss = self.compute_loss_and_updates
-        if self.pipeline: loss = self.pipeline(loss, "loss")
+        loss = pipeline(loss, "loss")
 
         grad_fn = jax.value_and_grad(
             loss, has_aux=True
@@ -310,8 +308,8 @@ class JAXTrainer(base_trainer.Trainer):
         if not self.run_eagerly and self.jit_compile:
             train_step = self.train_step
             print("pre train self=", train_step)
-            print("pipeline= ", self.pipeline)
-            if self.pipeline: train_step = self.pipeline(train_step, "train", jit_options={"donate_argnums": 0})
+            print("pipeline= ", pipeline)
+            train_step = pipeline(train_step, "train", jit_options={"donate_argnums": 0})
             print("post train self=", train_step)
             # Note that we mark the state to be donated to jax,
             # so that jax will reuse the memory buffer for outputs.
@@ -331,7 +329,7 @@ class JAXTrainer(base_trainer.Trainer):
             return
         if not self.run_eagerly and self.jit_compile:
             test_step = self.test_step
-            if self.pipeline: test_step = self.pipeline(test_step, "test", jit_options={"donate_argnums": 0})
+            test_step = pipeline(test_step, "test", jit_options={"donate_argnums": 0})
             # Note that we mark the state to be donated to jax,
             # so that jax will reuse the memory buffer for outputs.
             # This will reduce the memory usage of the training function by
@@ -353,7 +351,7 @@ class JAXTrainer(base_trainer.Trainer):
             return outputs, (state[0], non_trainable_variables)
 
         if not self.run_eagerly and self.jit_compile:
-            if self.pipeline: predict_step = self.pipeline(predict_step, "predict")
+            predict_step = pipeline(predict_step, "predict")
             predict_step = jax.jit(predict_step)
 
         _step_function = self._make_function(
