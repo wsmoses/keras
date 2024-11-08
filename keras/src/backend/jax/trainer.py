@@ -46,6 +46,9 @@ class JAXTrainer(base_trainer.Trainer):
                     print("sending pipe2")
                     return pipe(fn)
             self.pipeline = pipelinefn 
+        
+        print("construct pipeline= ", self.pipeline)
+        print("construct self= ", self)
 
     def compute_loss_and_updates(
         self,
@@ -307,6 +310,7 @@ class JAXTrainer(base_trainer.Trainer):
         if not self.run_eagerly and self.jit_compile:
             train_step = self.train_step
             print("pre train self=", train_step)
+            print("pipeline= ", self.pipeline)
             if self.pipeline: train_step = self.pipeline(train_step, "train", jit_options={"donate_argnums": 0})
             print("post train self=", train_step)
             # Note that we mark the state to be donated to jax,
