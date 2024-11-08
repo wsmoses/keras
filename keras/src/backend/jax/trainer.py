@@ -16,7 +16,7 @@ from keras.src.trainers.data_adapters import data_adapter_utils
 from keras.src.trainers.epoch_iterator import EpochIterator
 from keras.src.utils import traceback_utils
 
-def pipeline(fn, fntype, **kwargs):
+def pipeline(fn, fntype, jit_options={}):
     import os
     pvar = os.environ.get('ENZYME_JAX', None)
     print("environ=", os.environ)
@@ -32,13 +32,13 @@ def pipeline(fn, fntype, **kwargs):
     if fntype == "loss":
         if pre:
             print("sending pipe1")
-            return enzyme_jax.enzyme_jax_ir(pipeline_options=pipe, jit_options=kwargs, inner_jit=False)(fn)
+            return enzyme_jax.enzyme_jax_ir(pipeline_options=pipe, jit_options, inner_jit=False)(fn)
         else:
             print("not sending pipe")
             return fn
     else:
         print("sending pipe2")
-        return enzyme_jax.enzyme_jax_ir(pipeline_options=pipe, jit_options=kwargs, inner_jit=False)(fn)
+        return enzyme_jax.enzyme_jax_ir(pipeline_options=pipe, jit_options, inner_jit=False)(fn)
 
 class JAXTrainer(base_trainer.Trainer):
     def __init__(self):
