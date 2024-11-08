@@ -32,13 +32,13 @@ def pipeline(fn, fntype, jit_options={}):
     if fntype == "loss":
         if pre:
             print("sending pipe1")
-            return enzyme_jax.enzyme_jax_ir(pipeline_options=pipe, jit_options, inner_jit=False)(fn)
+            return enzyme_jax.enzyme_jax_ir(pipeline_options=pipe, jit_options=jit_options, inner_jit=False)(fn)
         else:
             print("not sending pipe")
             return fn
     else:
         print("sending pipe2")
-        return enzyme_jax.enzyme_jax_ir(pipeline_options=pipe, jit_options, inner_jit=False)(fn)
+        return enzyme_jax.enzyme_jax_ir(pipeline_options=pipe, jit_options=jit_options, inner_jit=False)(fn)
 
 class JAXTrainer(base_trainer.Trainer):
     def __init__(self):
