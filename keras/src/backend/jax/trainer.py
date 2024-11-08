@@ -24,12 +24,12 @@ class JAXTrainer(base_trainer.Trainer):
         self.predict_function = None
         self._jax_state_synced = True
         import os
-        pvar = os.getenv("ENZYME_JAX")
+        pvar = os.environ.get('ENZYME_JAX', None)
         print("environ=", os.environ)
         print("pvar=", pvar, " ty=", type(pvar))
         if (pvar is not None):
             import enzyme_ad.jax as enzyme_jax
-            pre = os.getenv("ENZYME_JAX_PRE")
+            pre = os.environ.get('ENZYME_JAX_PRE', None)
             print("prevar=", pre, " ty=", type(pre))
             pvar = pvar.replace("hlo_opts()", enzyme_jax.hlo_opts())
             def pipelinefn(fn, fntype, **kwargs):
