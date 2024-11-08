@@ -13,7 +13,7 @@ _EPSILON = 1e-7
 _IMAGE_DATA_FORMAT = "channels_last"
 
 # Default backend: TensorFlow.
-_BACKEND = "tensorflow"
+_BACKEND = "jax"
 
 
 @keras_export(["keras.config.floatx", "keras.backend.floatx"])
