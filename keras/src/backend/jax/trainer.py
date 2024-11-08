@@ -301,6 +301,7 @@ class JAXTrainer(base_trainer.Trainer):
             return
         print("train self=", self)
         if not self.run_eagerly and self.jit_compile:
+            train_step = self.train_step
             print("pre train self=", train_step)
             if self.pipeline: train_step = self.pipeline(train_step, "train", jit_options={"donate_argnums": 0})
             print("post train self=", train_step)
@@ -308,7 +309,7 @@ class JAXTrainer(base_trainer.Trainer):
             # so that jax will reuse the memory buffer for outputs.
             # This will reduce the memory usage of the training function by
             # half.
-            train_step = jax.jit(self.train_step, donate_argnums=0)
+            train_step = jax.jit(train_step, donate_argnums=0)
             print("jit train self=", train_step)
         else:
             train_step = self.train_step
@@ -321,12 +322,13 @@ class JAXTrainer(base_trainer.Trainer):
         if self.test_function is not None and not force:
             return
         if not self.run_eagerly and self.jit_compile:
+            test_step = self.test_step
             if self.pipeline: test_step = self.pipeline(test_step, "test", jit_options={"donate_argnums": 0})
             # Note that we mark the state to be donated to jax,
             # so that jax will reuse the memory buffer for outputs.
             # This will reduce the memory usage of the training function by
             # half.
-            test_step = jax.jit(self.test_step, donate_argnums=0)
+            test_step = jax.jit(test_step, donate_argnums=0)
         else:
             test_step = self.test_step
 
