@@ -19,8 +19,6 @@ from keras.src.utils import traceback_utils
 def pipeline(fn, fntype, jit_options={}):
     import os
     pvar = os.environ.get('ENZYME_JAX', None)
-    print("environ=", os.environ)
-    print("pvar=", pvar, " ty=", type(pvar))
     if pvar is None:
         return fn
     import enzyme_ad.jax as enzyme_jax
