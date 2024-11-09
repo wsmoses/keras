@@ -27,13 +27,18 @@ def pipeline(fn, fntype, jit_options={}):
     pre = os.environ.get('ENZYME_JAX_PRE', None)
     pvar = pvar.replace("hlo_opts()", enzyme_jax.hlo_opts())
     pipe = enzyme_jax.JaXPipeline(pvar)
+    
+    printvar = os.environ.get('ENZYME_PREPRINT', None)
+    kw = jit_options.copy()
+    if printvar:
+        kw["enzyme_print"] = True
     if fntype == "loss":
         if pre:
-            return enzyme_jax.enzyme_jax_ir(pipeline_options=pipe, jit_options=jit_options, inner_jit=False)(fn)
+            return enzyme_jax.enzyme_jax_ir(pipeline_options=pipe, jit_options=kw, inner_jit=False)(fn)
         else:
             return fn
     else:
-        return enzyme_jax.enzyme_jax_ir(pipeline_options=pipe, jit_options=jit_options, inner_jit=False)(fn)
+        return enzyme_jax.enzyme_jax_ir(pipeline_options=pipe, jit_options=kw, inner_jit=False)(fn)
 
 class JAXTrainer(base_trainer.Trainer):
     def __init__(self):
@@ -299,19 +304,14 @@ class JAXTrainer(base_trainer.Trainer):
     def make_train_function(self, force=False):
         if self.train_function is not None and not force:
             return
-        print("train self=", self)
         if not self.run_eagerly and self.jit_compile:
             train_step = self.train_step
-            print("pre train self=", train_step)
-            print("pipeline= ", pipeline)
             train_step = pipeline(train_step, "train", jit_options={"donate_argnums": 0})
-            print("post train self=", train_step)
             # Note that we mark the state to be donated to jax,
             # so that jax will reuse the memory buffer for outputs.
             # This will reduce the memory usage of the training function by
             # half.
             train_step = jax.jit(train_step, donate_argnums=0)
-            print("jit train self=", train_step)
         else:
             train_step = self.train_step
 
